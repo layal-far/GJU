@@ -1,0 +1,347 @@
+#include <Arduino.h>
+#include <DHT.h>
+#include <Adafruit_Sensor.h>
+#include <ESP32Servo.h>
+#define BLYNK_TEMPLATE_ID "TMPL6CN52jIbW"
+#define BLYNK_TEMPLATE_NAME "CropWatch"
+#define BLYNK_AUTH_TOKEN "nx_sek8vTMWxOdgGt91sU9dJj-zyq35B"
+#include <BlynkSimpleEsp32.h>
+#include <WiFi.h>
+#include <elapsedMillis.h>
+
+#define BLYNK_PRINT Serial
+
+#define ssid "layal"
+#define password "123654654"
+
+//control pins
+int relayP = 27; 
+#define PIN_SERVO 17
+Servo myServo;
+DHT dht(21, DHT11);
+#define soil_moist_pin 34
+const int ledPin = 2;    //for connectivity checks
+
+//ranges for adjusting horizon length
+#define MIN_HORIZON_LENGTH 5
+#define MAX_HORIZON_LENGTH 15
+#define VARIANCE_THRESHOLD_LOW 5.0
+#define VARIANCE_THRESHOLD_HIGH 10.0
+
+//virtual pin assignments for sensors
+const int SOIL_MOISTURE_VPIN = V0;
+const int HUMIDITY_VPIN = V1;
+const int AIR_TEMP_VPIN = V2;
+
+//virtual pins for manual control
+const int MANUAL_WATER_PUMP_VPIN = V3;
+const int MANUAL_WINDOW_CONTROL_VPIN = V4;
+
+//define parameters
+const int pumpthreshold = 50;           //soil moisture threshold for watering
+const int hysteresisthreshold = 10;     //to prevent rapid on/off switching
+const int humiditythreshold = 50;       //humidity threshold for opening windows
+const int airtempthreshold = 20;        //air temp threshold for opening windows
+
+//define objects to track time
+elapsedMillis elapsedTime;
+BlynkTimer timer;
+
+//define variable for storing current horizon lengh
+int rh_length = 0;
+
+//define variables for storing past sensor readings
+int sm_history[MAX_HORIZON_LENGTH] = {0}; 
+int humidity_history[MAX_HORIZON_LENGTH] = {0};
+int temp_history[MAX_HORIZON_LENGTH] = {0}; 
+int curr_idx = 0;
+
+//define variables for handling device states
+bool isPumpActive = false;
+bool manualWaterPumpState = false;
+bool manualWindowControlState = false;
+bool manualControlActive = false;
+const unsigned long manualControlDuration = 300000; //5 min
+
+//define functions in global scope
+void readSensorValues();
+void run_rhc();
+void controlWaterPump(float avg_sm);
+void controlWindows(float avg_humidity, float avg_temp);
+void checkSoilMoistureAlert();
+
+//function to calculate average of sensor readings
+float calculate_average(int *array, int length) {
+    float sum = 0;
+    for (int i = 0; i < length; i++) {
+        sum += array[i];
+    }
+    return sum / length;
+}
+
+//function to calculate stability of soil moisture readings
+float calculate_variance(int *array, int length, float mean) {
+    float sum = 0;
+    for (int i = 0; i < length; i++) {
+        sum += pow(array[i] - mean, 2);
+    }
+    return sum / length;
+}
+
+//function to initialize dht, pins, wifi connection, Blynk, and stabilization delays/intervals
+void setup() {
+    dht.begin();
+    delay(2000);
+    Serial.begin(921600); //baud rate
+
+    pinMode(relayP, OUTPUT);
+    pinMode(ledPin, OUTPUT);
+    myServo.attach(PIN_SERVO);
+    pinMode(MANUAL_WATER_PUMP_VPIN, INPUT);
+    pinMode(MANUAL_WINDOW_CONTROL_VPIN, INPUT);
+
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        digitalWrite(ledPin, LOW); 
+        delay(500);
+        digitalWrite(ledPin, HIGH); 
+        Serial.print(".");
+        delay(500);
+    }
+    Serial.println();
+    digitalWrite(ledPin, HIGH);
+
+    //print wifi connection details
+    Serial.println("Connected to WiFi!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    curr_idx = 0;
+
+    Blynk.begin(BLYNK_AUTH_TOKEN, ssid, password);
+
+    timer.setInterval(10000L, readSensorValues);        //take readings every 10 seconds
+    timer.setInterval(60000L, checkSoilMoistureAlert);  //check alert every 1 minute
+    
+    //request current state of virtual pins
+    Blynk.syncVirtual(V3);
+    Blynk.syncVirtual(V4);
+}
+
+void readSensorValues() {
+
+    //read soil moisture from analog pin 4
+    int sm_raw = analogRead(soil_moist_pin);
+    float sm_percentage = 100 - ((sm_raw / 4095.00) * 100);
+
+    //read humidity from dht sensor
+    float humidity = dht.readHumidity();
+    Serial.print("Humidity: ");
+    Serial.println(humidity);
+    
+    //replace nan with last stored valid value
+    if (isnan(humidity)) {
+        humidity = humidity_history[curr_idx];
+    }
+
+    //read air temp from dht sensor
+    float temperature = dht.readTemperature();
+    Serial.print("Temperature: ");
+    Serial.println(temperature);
+
+    //replace nan with last stored valid value
+    if (isnan(temperature)) {
+        temperature = temp_history[curr_idx];
+    }
+
+    //update sensor history arrays
+    sm_history[curr_idx] = sm_percentage;
+    humidity_history[curr_idx] = humidity;
+    temp_history[curr_idx] = temperature;
+
+    //increment current index for sensor history arrays
+    curr_idx = (curr_idx + 1) % MAX_HORIZON_LENGTH;
+
+    //update Blynk app with sensor readings
+    Blynk.virtualWrite(SOIL_MOISTURE_VPIN, sm_percentage);
+    Blynk.virtualWrite(HUMIDITY_VPIN, humidity);
+    Blynk.virtualWrite(AIR_TEMP_VPIN, temperature);
+
+    //run automated control logic
+    run_rhc();   
+}
+
+void run_rhc() {
+
+    //if manual control active ignore automated logic
+    if (manualControlActive) {
+        Serial.println("Manual control active.");
+        return;
+    }
+
+    //calculate variance of recent soil moisture readings
+    float avg_recent = calculate_average(sm_history, MIN_HORIZON_LENGTH);
+    float variance_sm = calculate_variance(sm_history, MIN_HORIZON_LENGTH, avg_recent);
+ 
+    rh_length = constrain(MIN_HORIZON_LENGTH + (int)(variance_sm - VARIANCE_THRESHOLD_LOW), MIN_HORIZON_LENGTH, MAX_HORIZON_LENGTH);
+    Serial.print("Horizon Length: ");
+    Serial.println(rh_length);
+
+    //calculate avg soil moisture, humidity, temperature over horizon length
+    float avg_sm = calculate_average(sm_history, rh_length);
+    float avg_humidity = calculate_average(humidity_history, rh_length);
+    float avg_temp = calculate_average(temp_history, rh_length);
+    Serial.print("Average Soil Moisture: ");
+    Serial.println(avg_sm);
+    Serial.print("Average Humidity: ");
+    Serial.println(avg_humidity);
+    Serial.print("Average Temperature: ");
+    Serial.println(avg_temp);
+
+    //control pump based on pump threshold with hysteresis
+    if (avg_sm < (pumpthreshold - hysteresisthreshold)) {
+        controlWaterPump(avg_sm);
+    } else if (avg_sm > (pumpthreshold + hysteresisthreshold)) {
+        controlWaterPump(avg_sm);
+    }
+
+    //control windows based on average humidity and temperature
+    controlWindows(avg_humidity, avg_temp);
+
+}
+
+//function for automated water pump control
+void controlWaterPump(float avg_sm) {
+    if (avg_sm < (pumpthreshold - hysteresisthreshold)) {
+
+        //activate water pump if not already active
+        if (!isPumpActive) {
+            digitalWrite(27, LOW);
+            isPumpActive = true;
+
+            //update Blynk app with water pump status
+            Blynk.virtualWrite(V3, 1);
+            Serial.println("Water pump activated.");
+        }
+    } else if (avg_sm > (pumpthreshold + hysteresisthreshold)) {
+
+        //deactivate water pump if not deactivated
+        if (isPumpActive) {
+            digitalWrite(27, HIGH);
+            isPumpActive = false;
+
+            //update Blynk app with water pump status
+            Blynk.virtualWrite(V3, 0);
+            Serial.println("Water pump deactivated.");
+        }
+    }
+}
+
+//function for automated window control
+void controlWindows(float avg_humidity, float avg_temp) {
+
+    //if average humidity AND temp exceeds threshold, open windows
+    if (avg_humidity > humiditythreshold && avg_temp > airtempthreshold) {
+        myServo.write(0);
+
+        //update app with window status
+        Blynk.virtualWrite(V4, 1);
+        Serial.println("Windows opened.");
+    } else {
+        myServo.write(120);
+
+        //update app with window status
+        Blynk.virtualWrite(V4, 0);
+        Serial.println("Windows closed.");
+    }
+}
+
+//function to check for abnormal conditions
+void checkSoilMoistureAlert() {
+
+    //calculate avg soil moisture over the horizon length
+    int avg_sm = calculate_average(sm_history, rh_length);
+
+    if (avg_sm < 10 || avg_sm > 80) {
+        Blynk.logEvent("soil_moisture_alert");
+        Serial.println("Abnormal Soil Moisture Levels!");
+    }
+}
+
+//virtual write handler for manual action
+BLYNK_WRITE_DEFAULT(){
+  int pin = request.pin;
+  int value = param.asInt();
+
+  //update manual control states accordingly
+  if (pin == V3) {
+        manualWaterPumpState = value;
+        Serial.print("Manual Water Pump State: ");
+        Serial.println(manualWaterPumpState);
+
+        //control the water pump based on the manual state
+        if (manualWaterPumpState == 1) {
+            digitalWrite(27, LOW);
+            isPumpActive = true;
+        } else {
+            digitalWrite(27, HIGH);
+            isPumpActive = false;
+        }
+    } else if (pin == V4) {
+        manualWindowControlState = value;
+        Serial.print("Manual Window Control State: ");
+        Serial.println(manualWindowControlState);
+
+        //control the windows based on the manual state
+        if (manualWindowControlState == 1) {
+            myServo.write(0);
+        } else {
+            myServo.write(120);
+        }
+    }
+
+  //enter manual mode if either or both switches are set manually 
+  manualControlActive = (manualWaterPumpState != 0 || manualWindowControlState != 0);
+
+  //reset elapsed time
+  elapsedTime = 0;
+}
+
+void loop() {
+    Blynk.run();
+    timer.run();
+
+    //print debug info
+    Serial.println("In loop");
+    Serial.print("Manual Water Pump Virtual Pin: ");
+    Serial.println(MANUAL_WATER_PUMP_VPIN);
+    Serial.print("Manual Water Pump State: ");
+    Serial.println(manualWaterPumpState);
+    Serial.print("Manual Window Control Virtual Pin: ");
+    Serial.println(MANUAL_WINDOW_CONTROL_VPIN);
+    Serial.print("Manual Window Control State: ");
+    Serial.println(manualWindowControlState);
+
+    if (manualControlActive) {
+
+        //turn off switches and devices if manual control default duration over or both switches set to 0 again
+        if (elapsedTime >= manualControlDuration || (manualWaterPumpState == 0 && manualWindowControlState == 0)) {
+            manualControlActive = false;
+            Serial.print("Manual Control Deactivated.");
+
+            //reset water pump and window states 
+            manualWaterPumpState = false;
+            manualWindowControlState = false;
+            Blynk.virtualWrite(V3, 0);
+            digitalWrite(27, HIGH);
+            isPumpActive = false;
+            Blynk.virtualWrite(V4, 0);
+            myServo.write(120);
+        }
+    } else {
+        
+        //run automated control logic
+        run_rhc();  
+    }
+    delay(2000);    //delay for stability
+}
