@@ -1,0 +1,107 @@
+Q1. #include<stdio.h>
+
+int Max(float a[], float x){ 
+    
+    float maxnumber=a[0];                        
+    int i;
+
+    for( i=1;i<x;i++){
+         if(maxnumber<a[i])
+         maxnumber=a[i];
+    }
+
+    return maxnumber;
+} 
+
+int main()
+{
+    int i;
+    float a[15];
+    
+    printf("Enter 15 elements for your array:\n");
+    for(i=0;i<15;i++)
+    scanf("%f",&a[i]);
+    
+    float maxnumber=Max(a,15);
+    
+    printf("The maximum value in the array is %f", maxnumber);
+    
+    return 0;
+}
+
+Q2. #include <stdio.h>
+
+int Transpose(int r,int c,int a[r][c],int trans[c][r])
+{
+  int i,j;
+
+  for(i=0;i<r;i++)
+        for(j=0;j<c;j++) {
+            trans[j][i]=a[i][j];
+        }
+      return trans[i][j];
+}
+
+int FillMatrix(int r,int c,int a[r][c])
+{
+  int i,j;
+  printf("\nEnter matrix elements:\n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            scanf("%d",&a[i][j]);
+        }
+
+      return a[i][j];    
+}
+
+int DisplayMatrix(int r,int c,int a[r][c])
+{
+    int i,j;
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            printf("%d  ",a[i][j]);
+            if (j==c-1)
+                printf("\n");
+        }
+}
+
+int main()
+{
+  int r,c;
+
+  printf("Enter rows and columns: ");
+  scanf("%d%d",&r,&c);
+  
+  int M[r][c],T[c][r];
+  FillMatrix(r,c,M);
+  Transpose(r,c,M,T);
+  printf("\nEntered matrix: \n");
+  DisplayMatrix(r,c,M);
+  printf("\nTransposed matrix: \n");
+  DisplayMatrix(c,r,T);
+
+  return 0;
+}
+
+
+Q3. #include<stdio.h>
+
+int find_factorial(int x)
+{
+   if(x==0)
+      return(1);
+ 
+   return(x*find_factorial(x-1));
+}
+
+int main()
+{
+   int n, fact;
+   printf("Enter any integer:");
+   scanf("%d",&n);
+ 
+   fact=find_factorial(n);
+   printf("\nThe factorial of %d is %d",n, fact);
+   
+   return 0;
+}

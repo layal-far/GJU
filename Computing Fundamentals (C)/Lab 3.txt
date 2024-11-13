@@ -1,0 +1,67 @@
+Lab 3
+
+Q5 #include<stdio.h>
+int main()
+{
+  int i, number, sum=0;
+  float avg;
+ 
+  printf("Please enter the maximum value:\n");
+  scanf("%d", &number);
+  printf("Odd numbers from 0 to %d are:\n", number);
+  for(i=1;i<=number;i++)
+  {
+  	if (i%2!=0) 
+  	{
+  		printf("%d ", i);
+        sum=sum+i;
+  	}
+  }
+  printf("\nThe sum of odd numbers from 1 to %d: %d", number, sum);
+  
+  avg=sum/((number+1)/2);
+  printf("\nThe average of these numbers is: %f",avg);
+
+  return 0;
+}
+
+Q6 #include<stdio.h>
+ 
+int main()
+{
+    int i, num, fact=1;
+    
+    printf("Enter an integer:\n");
+    scanf("%d",&num);
+    
+    if(num<0)
+    printf("Error: Factorials of negative integers do not exist");
+    else{
+        for(i=1;i<=num;++i){
+            fact*=i;
+        }
+        printf("The factorial of %d is: %d", num, fact);
+    }
+    
+
+  return 0;
+}
+
+Q8 #include<stdio.h>
+ 
+int main()
+{
+    int n, a, first=0, second=1, nextterm;
+    printf("Enter the number of terms required:\n");
+    scanf("%d",&n);
+    printf("First %d terms of the Fibonacci series are:\n",n);
+    
+    for(a=1;a<=n;++a){
+        printf("%d ",first);
+        nextterm=first+second;
+        first=second;
+        second=nextterm;
+    }
+    
+  return 0;
+}

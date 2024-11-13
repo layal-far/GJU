@@ -1,0 +1,33 @@
+Q1) #include <stdio.h>
+
+int main()
+{
+    printf("Phone Number: +962-790290456\n" "Name: L.R.F\n");
+
+    printf("Average: 97.2/100\n");
+    
+    return 0;
+}
+
+
+
+Q2) #include <stdio.h>
+
+int main()
+{
+    int a, b, c;
+    float avg;
+
+    printf("Enter first number: ");
+    scanf("%d",&a);
+    printf("Enter second number: ");
+    scanf("%d",&b);
+    printf("Enter third number: ");
+    scanf("%d",&c);
+
+    avg= (float)(a+b+c)/3;
+
+    printf("Average of %d and %d and %d is: %f",a,b,c,avg); 
+
+    return 0;
+}

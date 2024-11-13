@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <pthread.h>
+
+typedef struct {
+    int numstudents;
+    int totalscores;
+} AnalysisSummary;
+
+AnalysisSummary* summaries; 
+pthread_mutex_t mutex;
+
+void createfiles() {
+    system("echo 'Abdullah Omar, 25\nAhmad Khaled, 26\nAbbas Ali, 27' > CS416_Section1_Midterm.txt");
+    system("echo 'Abdullah Yaser, 24\nAli Abbas, 17' > CS416_Section2_Midterm.txt");
+    system("echo 'Ahmad Khaled, 22\nAhmad Ali, 26\nKhaled Abbas, 30\nKamel Omar, 19\nMohammad Abdullah, 20' > CS416_Section3_Midterm.txt");
+}
+
+void* processfile(void* arg) {
+    int sectionidx = *((int*)arg);
+
+    char* inputfiles[] = {
+        "CS416_Section1_Midterm.txt",
+        "CS416_Section2_Midterm.txt",
+        "CS416_Section3_Midterm.txt"
+    };
+
+    int inputf = open(inputfiles[sectionidx], O_RDONLY);
+    if (inputf < 0) {
+        perror("Error opening file");
+        pthread_exit(NULL);
+    }
+
+    int totalstudents = 0, totalscores = 0;
+    char buffer[100];
+
+    while (read(inputf, buffer, sizeof(buffer)) > 0) {
+        int score = 0;
+        for (int p = 0; buffer[p] != '\0'; p++) {
+            if (buffer[p] >= '0' && buffer[p] <= '9') 
+                score = score * 10 + (buffer[p] - '0');
+            else if (buffer[p] == ',' || buffer[p] == '\n') {
+                if (score != 0) {
+                    totalstudents++;
+                    totalscores += score;
+                    score = 0;
+                }
+            }
+        }
+    }
+
+    close(inputf);
+
+    pthread_mutex_lock(&mutex);
+    summaries[sectionidx].numstudents = totalstudents;
+    summaries[sectionidx].totalscores = totalscores;
+    pthread_mutex_unlock(&mutex);
+
+    pthread_exit(NULL);
+}
+
+void createthreads() {
+    pthread_t threads[3];
+    int sectionindices[] = {0, 1, 2};
+
+    for (int i = 0; i < 3; i++) {
+        pthread_create(&threads[i], NULL, processfile, (void*)&sectionindices[i]);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        pthread_join(threads[i], NULL);
+    }
+}
+
+int main() {
+    createfiles();
+
+    summaries = (AnalysisSummary*)malloc(3*sizeof(AnalysisSummary));
+
+    pthread_mutex_init(&mutex, NULL);
+
+    createthreads();
+    
+    int finaloutput = open("Overall_Analysis.txt", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (finaloutput < 0) {
+        perror("Error opening final output file");
+        exit(EXIT_FAILURE);
+    }
+
+    int totalstudents = 0, totalscores = 0;
+    char output_buffer[100];
+
+    for (int i = 0; i < 3; i++) {
+        pthread_mutex_lock(&mutex);
+
+        totalstudents += summaries[i].numstudents;
+        totalscores += summaries[i].totalscores;
+
+        pthread_mutex_unlock(&mutex);
+
+        double sectionavg = (double)summaries[i].totalscores / summaries[i].numstudents;
+        int byteswritten = sprintf(output_buffer, "Section %d average: %.2f\n", i + 1, sectionavg);
+        write(finaloutput, output_buffer, byteswritten);
+    }
+
+    double overallavg = (double)totalscores / totalstudents;
+    int byteswritten = sprintf(output_buffer, "\nOverall average: %.2f\n", overallavg);
+    write(finaloutput, output_buffer, byteswritten);
+
+    close(finaloutput);
+
+    pthread_mutex_destroy(&mutex);
+    free(summaries);
+
+    return 0;
+}

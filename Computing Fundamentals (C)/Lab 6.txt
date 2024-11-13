@@ -1,0 +1,113 @@
+Q2 #include <stdio.h>
+int main() 
+{
+    float A[100][100], T[100][100];   
+    int r,c,i,j;
+    printf("Enter rows and columns: ");
+    scanf("%d%d",&r,&c);
+    printf("\nEnter matrix elements:\n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+    		scanf("%f",&A[i][j]);
+        }
+    printf("\nEntered matrix: \n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            printf("%f  ",A[i][j]);
+            if (j==c-1)
+                printf("\n");
+        }
+
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            T[j][i] = A[i][j];
+        }
+    printf("\nTranspose of the matrix:\n");
+    for (i=0;i<c;i++)
+        for (j=0;j<r;j++){
+            printf("%f  ", T[i][j]);
+            if (j==r-1)
+                printf("\n");
+        }
+    return 0;
+}
+
+
+Q3 #include<stdio.h>
+ 
+int main()
+{
+    int A[100][100],i,j,r,c,max;
+ 
+    printf("Enter rows and columns: ");
+    scanf("%d%d",&r,&c);
+    printf("\nEnter matrix elements:\n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            scanf("%d",&A[i][j]);
+        }
+    printf("\nEntered matrix: \n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            printf("%d  ",A[i][j]);
+            if (j==c-1)
+                printf("\n");
+        }
+    printf("\n");
+
+    if(r==c)
+    {
+        for (i=0;i<r;i++)
+            for (j=0;j<c;j++){
+      if(A[i][j]>max){
+        max=A[i][j];
+      }
+    }
+    printf("The max value of the diagonal is %d \n",max);
+    }else{
+        printf("\nThe matrix is not square");
+    }
+    return 0;
+}
+
+
+Q4 #include <stdio.h>
+
+int main()
+{
+    int A[100][100],i,j,r,c;
+ 
+    printf("Enter rows and columns: ");
+    scanf("%d%d",&r,&c);
+    printf("\nEnter matrix elements:\n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            scanf("%d",&A[i][j]);
+        }
+    printf("\nEntered matrix: \n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            printf("%d  ",A[i][j]);
+            if (j==c-1)
+                printf("\n");
+        }
+        
+    printf("\n");
+     for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+         if(A[i][j]<0){
+            A[i][j]=0;
+         }
+         
+    }
+    printf("\nMatrix with negative numbers replaced:\n");
+    for (i=0;i<r;i++)
+        for (j=0;j<c;j++){
+            printf("%d  ",A[i][j]);
+            if (j==c-1)
+                printf("\n");
+        }
+ 
+ 
+    return 0;
+}

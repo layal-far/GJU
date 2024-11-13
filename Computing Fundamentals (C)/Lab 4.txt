@@ -1,0 +1,82 @@
+Lab 4
+
+Q1.3 #include <stdio.h>  
+  
+int main()  
+{  
+    int i,j;  
+    for(i=5;i>=1;i--)  
+    {  
+      for(j=1;j<=i;j++)  
+      {  
+          printf("*");  
+      }  
+      printf("\n");  
+    }  
+    return 0;  
+}  
+
+Q2 #include <stdio.h>
+
+int main()
+{
+    int i, j, fact=1, number=0;
+    
+    printf("Enter 20 numbers: \n");
+    for(i=0;i<=20;i++){
+        printf ("Enter number %d: ", (i+1));
+        scanf("%d",&number);
+        for(j=1;j<=number;j++){
+            fact*=j;
+            
+        }
+        printf("The factorial is: %d \n", fact);
+        printf("\n");
+    }
+    return 0;
+}
+
+Q5 #include <stdio.h>
+
+int main()
+{
+   int i, sum=0;
+  
+   printf("The sum of perfect squares from 1 to 1000 is: \n");
+   
+   for(i=1;i<=1000;i++){
+       
+       sum=sum=(i*i);
+   }
+   printf("%d",sum);
+   
+    return 0;
+}
+
+
+Q5 Alternate version displaying the perfect squares as well:
+
+#include <stdio.h>
+#include <math.h>
+
+int main()
+{
+   int a, i, sum=0;
+   float c;
+   
+   printf("The perfect squares from 1 to 1000 are: \n");
+   
+   for(i=1;i<=1000;i++){
+       
+       c=sqrt(i);
+       a=c;
+       if (c==a){
+       printf("%d ", i);
+       }
+       sum=sum=(i*i);
+   }
+   printf("\nThe sum of perfect squares from 1 to 1000 is: \n");
+   printf("%d",sum);
+   
+    return 0;
+}

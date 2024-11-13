@@ -1,0 +1,214 @@
+Q2#include <stdio.h>
+int main ()
+{
+    int a,b;
+    float c;
+    printf("Enter a number:\n");
+    scanf("%d",&a);
+    printf("Enter a second number:\n");
+    scanf("%d", &b);
+    
+    if(b==0){
+        printf("b is zero");
+    }
+    else{
+        c=a/b;
+        printf("Division Result = %f", c);
+
+    }
+return 0;
+}
+
+
+Q4 #include <stdio.h>
+int main(){
+int q;
+printf("Enter Q Range:\n");
+scanf("%d",&q);
+
+	if(q >= 130){
+	printf("Your IQ Classification is: Very Superior\n"); 
+		}
+	else if (q>=120&&q<=129){ 
+		printf("Your IQ Classification is: Superior\n"); 
+		}
+	else if (q>=110&&q<=119){
+		printf("Your IQ Classification is: High Average\n");
+		}
+	else if (q>=90&&q<=109){
+		printf("Your IQ Classification is: Average\n");
+		}
+	else if (q>=80&&q<=89){
+		printf("Your IQ Classification is: Low Average\n");
+		}
+	else if (q>=70&&q<=79){
+		printf("Your IQ Classification is: Borderline\n");
+		}
+	else if (q<=69){
+		printf("Your IQ Classification is: Extremely Low\n");
+		}
+return 0;
+}
+
+Q6 #include <stdio.h>
+
+int main()
+{
+    int num = 0;
+    int ones = 0;
+    int tens = 0;
+    int hundreds = 0;
+    
+    printf("Enter a three-digit number: ");
+    scanf("%d",&num);
+     printf("\n");
+     
+    ones = num % 10;
+    num = num - ones;
+    tens = num %100;
+    num = num - tens;
+    tens = tens/10;
+    hundreds = (num % 1000)/100;
+    
+    switch(hundreds) 
+    {
+    case 0:
+    printf("Zero ");
+    break;
+    
+    case 1:
+    printf("One ");
+    break;
+    
+    case 2:
+    printf("Two ");
+    break;
+    
+    case 3:
+    printf("Three ");
+    break;
+    
+    case 4:
+    printf("Four ");
+    break;
+    
+    case 5:
+    printf("Five ");
+    break;
+    
+    case 6:
+    printf("Six ");
+    break;
+    
+    case 7:
+    printf("Seven ");
+    break;
+    
+    case 8: 
+    printf("Eight ");
+    break;
+    
+    case 9:
+    printf("Nine ");
+    
+    default:
+    printf("Error ");
+    break;
+    
+    }
+    
+    switch(tens) 
+    {
+    case 0:
+    printf("Zero ");
+    break;
+    
+    case 1:
+    printf("One ");
+    break;
+    
+    case 2:
+    printf("Two ");
+    break;
+    
+    case 3:
+    printf("Three ");
+    break;
+    
+    case 4:
+    printf("Four ");
+    break;
+    
+    case 5:
+    printf("Five ");
+    break;
+    
+    case 6:
+    printf("Six ");
+    break;
+    
+    case 7:
+    printf("Seven ");
+    break;
+    
+    case 8: 
+    printf("Eight ");
+    break;
+    
+    case 9:
+    printf("Nine ");
+    
+    default:
+    printf("Error ");
+    break;
+    
+    }
+    
+    switch(ones) 
+    {
+    case 0:
+    printf("Zero ");
+    break;
+    
+    case 1:
+    printf("One ");
+    break;
+    
+    case 2:
+    printf("Two ");
+    break;
+    
+    case 3:
+    printf("Three ");
+    break;
+    
+    case 4:
+    printf("Four ");
+    break;
+    
+    case 5:
+    printf("Five ");
+    break;
+    
+    case 6:
+    printf("Six ");
+    break;
+    
+    case 7:
+    printf("Seven");
+    break;
+    
+    case 8: 
+    printf("Eight ");
+    break;
+    
+    case 9:
+    printf("Nine ");
+    
+    default:
+    printf("Error ");
+    break;
+    
+    }
+return 0;
+}

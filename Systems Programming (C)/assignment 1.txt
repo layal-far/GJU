@@ -1,0 +1,133 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+void createfiles() {
+    system("echo 'Abdullah Omar, 25\nAhmad Khaled, 26\nAbbas Ali, 27' > CS415_Section1_Midterm.txt");
+    system("echo 'Abdullah Yaser, 24\nAli Abbas, 17' > CS415_Section2_Midterm.txt");
+    system("echo 'Ahmad Khaled, 22\nAhmad Ali, 26\nKhaled Abbas, 30\nKamel Omar, 19\nMohammad Abdullah, 20' > CS415_Section3_Midterm.txt");
+}
+
+void processfile(const char* inputfn, const char* outputfn) {
+    int inputf = open(inputfn, O_RDONLY);
+    int outputf = open(outputfn, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (inputf < 0 || outputf < 0) {
+        perror("Error opening files");
+        exit(EXIT_FAILURE);
+    }
+
+    int totalstudents = 0, totalscores = 0;
+    char buffer[100];
+
+    while (read(inputf, buffer, sizeof(buffer)) > 0) {
+        int score = 0;
+        for (int p = 0; buffer[p] != '\0'; p++) {
+            if (buffer[p] >= '0' && buffer[p] <= '9') 
+                score = score * 10 + (buffer[p] - '0');
+            else if (buffer[p] == ',' || buffer[p] == '\n') {
+                if (score != 0) {
+                    totalstudents++;
+                    totalscores += score;
+                    score = 0;
+                }
+            }
+        }
+    }
+
+    dprintf(outputf, "Total number of students: %d\nTotal scores: %d\n", totalstudents, totalscores);
+
+    close(inputf);
+    close(outputf);
+}
+
+int main() {
+    createfiles();
+
+    char* inputfiles[] = {
+        "CS415_Section1_Midterm.txt",
+        "CS415_Section2_Midterm.txt",
+        "CS415_Section3_Midterm.txt"
+    };
+    char* outputfiles[] = {
+        "Section1_Analysis.txt",
+        "Section2_Analysis.txt",
+        "Section3_Analysis.txt"
+    };
+
+    pid_t pid[3];
+
+    for (int i = 0; i < 3; i++) {
+        pid[i] = fork();
+        if (pid[i] < 0) {
+            perror("Error creating process");
+            exit(EXIT_FAILURE);
+        }
+        if (pid[i] == 0) {
+            processfile(inputfiles[i], outputfiles[i]);
+            exit(EXIT_SUCCESS);
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        waitpid(pid[i], NULL, 0);
+    }
+
+    int finaloutput = open("Overall_Analysis.txt", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (finaloutput < 0) {
+        perror("Error opening final output file");
+        exit(EXIT_FAILURE);
+    }
+
+    int totalstudents = 0;
+    int totalscores = 0;
+
+    for (int i = 0; i < 3; i++) {
+        int sectionoutput = open(outputfiles[i], O_RDONLY);
+        if (sectionoutput < 0) {
+            perror("Error opening output file");
+            exit(EXIT_FAILURE);
+        }
+
+        int sectionstudents = 0;
+        int sectionscores = 0;
+        int number = 0;
+        char ch;
+
+        while (read(sectionoutput, &ch, sizeof(char)) > 0) {
+            if (ch >= '0' && ch <= '9') {
+                number = number * 10 + (ch - '0');
+            } else if (ch == '\n') {
+                if (sectionstudents == 0) {
+                    sectionstudents = number;
+                } else {
+                    sectionscores = number;
+                }
+                number = 0;
+            }
+        }
+
+        double sectionavg = 0.0;
+        if (sectionstudents != 0) {
+            sectionavg = (double) sectionscores / sectionstudents;
+        }
+        dprintf(finaloutput, "Section %d average: %.2f\n", i + 1, sectionavg);
+
+        totalstudents += sectionstudents;
+        totalscores += sectionscores;
+
+        close(sectionoutput);
+    }
+
+    double overallavg = 0.0;
+    if (totalstudents != 0) {
+        overallavg = (double) totalscores / totalstudents;
+    }
+    dprintf(finaloutput, "\nOverall average: %.2f\n", overallavg);
+
+    close(finaloutput);
+
+    return 0;
+}

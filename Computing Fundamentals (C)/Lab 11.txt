@@ -1,0 +1,70 @@
+Q3. #include<stdio.h>
+
+void summation(int *x,int *y,int *z){
+   *z=*x+*y;
+   printf("The summation of the two numbers is: %d\n",*z);
+}
+
+int avg(int *x,int *y,int *z){
+   int average=*z/2;
+   
+   return average;
+}
+
+int maxm(int *x,int *y,int *z){
+   if(*x >*y)
+   return *x;
+   
+   else
+   return *y;
+}
+
+int main(){
+   int x,y,z;
+  
+   printf("Enter first number: ");
+   scanf("%d",&x);
+   printf("Enter second number: ");
+   scanf("%d",&y);
+  
+   summation(&x,&y,&z);
+   int average=avg(&x,&y,&z);
+   printf("The average of the two numbers is: %d\n",average);
+   int max=maxm(&x,&y,&z);
+   printf("The maximum of the two numbers is: %d\n",max);
+   
+   return 0;
+}
+
+
+Q4. #include <stdio.h>
+
+void sort(int n, int* ptr){
+    for (int i=0;i<n;i++){
+        for(int j=i+1;j<n;j++){
+            if(*(ptr+j)<*(ptr+i)){
+                int temp=*(ptr+i);
+                *(ptr+i)=*(ptr+j);
+                *(ptr+j)=temp;
+            }
+        }
+    }
+    
+    for(int i=0;i<n;i++)
+    printf("%d\t",*(ptr+i));
+}
+
+int main()
+{
+    int n,i,a[100];
+    
+    printf("Enter size of array: ");
+    scanf("%d", &n);
+    printf("Enter %d array elements:\n",n);
+    for(i=0;i<n;i++)
+    scanf("%d",&a[i]);
+    
+    sort(n,a);
+
+    return 0;
+}
